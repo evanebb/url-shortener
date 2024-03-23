@@ -28,6 +28,7 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	defer boltDb.Close()
 
 	repo, err := newBoltShortenedURLRepository(boltDb)
 	if err != nil {
