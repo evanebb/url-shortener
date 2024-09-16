@@ -1,6 +1,8 @@
 {{define "content" }}
-    <div class="container-sm">
+    <header class="container-sm pt-3">
         <h2>URL Shortener</h2>
+    </header>
+    <main class="container-sm">
         <form method="POST" action="/generate">
             <div class="mb-3">
                 <label for="url" class="form-label">Enter a URL to shorten:</label>
@@ -8,5 +10,5 @@
             </div>
             <button type="submit" class="btn btn-primary">Shorten!</button>
         </form>
-    </div>
+    </main>
 {{ end }}

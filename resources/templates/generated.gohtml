@@ -1,13 +1,15 @@
 {{define "content" }}
-    <div class="container-sm">
+    <header class="container-sm pt-3">
         <h2>URL Shortener</h2>
+    </header>
+    <main class="container-sm">
         <label for="shortenedUrl" class="form-label">Shortened URL:</label>
         <div class="input-group mb-3">
             <input type="text" class="form-control col-md-4" value="{{.}}" id="shortenedUrl" readonly>
             <button class="btn btn-outline-primary" onclick="copy({{.}}, this)">Copy URL</button>
         </div>
         <a href="/" class="btn btn-primary">Go back</a>
-    </div>
+    </main>
     <script type="text/javascript">
         async function copy(text, button) {
             button.innerHTML = 'Copied URL!';
