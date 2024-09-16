@@ -34,7 +34,11 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer boltDb.Close()
+	defer func(boltDb *bolt.DB) {
+		if err := boltDb.Close(); err != nil {
+			logger.Error("error closing BoltDB database", "error", err)
+		}
+	}(boltDb)
 
 	repo, err := newBoltShortenedURLRepository(boltDb)
 	if err != nil {
