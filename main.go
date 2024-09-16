@@ -6,7 +6,7 @@ import (
 	"fmt"
 	bolt "go.etcd.io/bbolt"
 	"io/fs"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,6 +24,12 @@ func run(ctx context.Context) error {
 		return err
 	}
 
+	logLevel := new(slog.LevelVar)
+	if err := logLevel.UnmarshalText([]byte(c.logLevel)); err != nil {
+		return err
+	}
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}))
+
 	boltDb, err := bolt.Open(c.dbFile, 0600, nil)
 	if err != nil {
 		return err
@@ -34,8 +40,6 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	logger := log.New(os.Stdout, "http: ", log.Ltime)
 
 	templateFs, err := fs.Sub(resources, "resources")
 	if err != nil {
@@ -53,14 +57,14 @@ func run(ctx context.Context) error {
 
 	go func() {
 		if c.httpsEnabled {
-			log.Printf("listening on %s (HTTPS enabled)\n", httpServer.Addr)
+			logger.Info(fmt.Sprintf("listening on %s (HTTPS enabled)", httpServer.Addr))
 			if err := httpServer.ListenAndServeTLS(c.httpsCertFile, c.httpsKeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				_, _ = fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
+				logger.Error("error listening and serving", "error", err)
 			}
 		} else {
-			log.Printf("listening on %s\n", httpServer.Addr)
+			logger.Info(fmt.Sprintf("listening on %s", httpServer.Addr))
 			if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				_, _ = fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
+				logger.Error("error listening and serving", "error", err)
 			}
 		}
 	}()
@@ -76,7 +80,7 @@ func run(ctx context.Context) error {
 		shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "error shutting down http server: %s\n", err)
+			logger.Error("error shutting down http server", "error", err)
 		}
 	}()
 

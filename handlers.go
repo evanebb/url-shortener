@@ -1,16 +1,19 @@
 package main
 
 import (
+	"log/slog"
 	"net/http"
 	"net/url"
 )
 
-func handleGenerateURL(repo ShortenedURLRepository, t Templater, baseUrl *url.URL) http.Handler {
+func handleGenerateURL(l *slog.Logger, repo ShortenedURLRepository, t Templater, baseUrl *url.URL) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
 
 		err = r.ParseForm()
 		if err != nil {
+			// FIXME: this is most likely a client error, figure this out and send a bad request response
+			l.Error("error parsing form", "error", err)
 			w.WriteHeader(500)
 			t.renderError(w)
 			return
@@ -18,6 +21,8 @@ func handleGenerateURL(repo ShortenedURLRepository, t Templater, baseUrl *url.UR
 
 		parsedUrl, err := url.ParseRequestURI(r.PostFormValue("url"))
 		if err != nil {
+			// FIXME: this is most likely a client error, figure this out and send a bad request response
+			l.Error("error parsing URL from form", "error", err)
 			w.WriteHeader(500)
 			t.renderError(w)
 			return
@@ -25,6 +30,7 @@ func handleGenerateURL(repo ShortenedURLRepository, t Templater, baseUrl *url.UR
 
 		su, err := GenerateShortenedURL(repo, parsedUrl)
 		if err != nil {
+			l.Error("error generating URL", "error", err)
 			w.WriteHeader(500)
 			t.renderError(w)
 			return
@@ -42,21 +48,24 @@ func handleGenerateURL(repo ShortenedURLRepository, t Templater, baseUrl *url.UR
 			responseURL = scheme + r.Host + "/u/" + su.ID
 		}
 
+		l.Debug("generated shortened URL", "originalUrl", su.FullURL.String(), "shortenedUrl", responseURL, "id", su.ID)
 		w.WriteHeader(200)
 		t.render(w, "generated", responseURL)
 	})
 }
 
-func handleRedirectURL(repo ShortenedURLRepository, t Templater) http.Handler {
+func handleRedirectURL(l *slog.Logger, repo ShortenedURLRepository, t Templater) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		su, err := repo.GetShortenedURLByID(id)
 		if err != nil {
+			l.Debug("no URL found for ID", "id", id)
 			w.WriteHeader(200)
 			t.render(w, "unknown", nil)
 			return
 		}
 
+		l.Debug("redirecting to URL", "id", id, "url", su.FullURL.String())
 		http.Redirect(w, r, su.FullURL.String(), http.StatusFound)
 	})
 }

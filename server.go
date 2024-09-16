@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 )
@@ -11,11 +11,11 @@ func NewServer(
 	ctx context.Context,
 	repo ShortenedURLRepository,
 	t Templater,
-	l *log.Logger,
+	l *slog.Logger,
 	baseUrl *url.URL,
 ) http.Handler {
 	mux := http.NewServeMux()
-	addRoutes(ctx, repo, t, baseUrl, mux)
+	addRoutes(ctx, repo, t, l, baseUrl, mux)
 
 	loggingMiddleware := LoggerMiddleware(l)
 

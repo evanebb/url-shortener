@@ -19,6 +19,7 @@ type AppConfig struct {
 	httpsKeyFile  string
 	// The listen address to use for the HTTP server. This is automatically determined if not explicitly specified.
 	listenAddress string
+	logLevel      string
 }
 
 // getAppConfiguration will parse the environment, command-line flags and application defaults to the final application configuration.
@@ -35,12 +36,14 @@ func getAppConfiguration() (*AppConfig, error) {
 	c.httpsCertFile = os.Getenv(prefix + "HTTPS_CERT_FILE")
 	c.httpsKeyFile = os.Getenv(prefix + "HTTPS_KEY_FILE")
 	c.listenAddress = os.Getenv(prefix + "LISTEN_ADDRESS")
+	c.logLevel = os.Getenv(prefix + "LOG_LEVEL")
 
 	flag.StringVar(&rawBaseURL, "base-url", rawBaseURL, "the base URL to use for all shortened URLs")
 	flag.StringVar(&c.dbFile, "db-file", c.dbFile, "the path where the BoltDB database file should be stored, defaults to 'url-shortener.db' in the current working directory")
 	flag.StringVar(&c.httpsCertFile, "https-cert-file", c.httpsCertFile, "the TLS certificate file to use for HTTPS")
 	flag.StringVar(&c.httpsKeyFile, "https-key-file", c.httpsKeyFile, "the TLS certificate key file to use for HTTPS")
 	flag.StringVar(&c.listenAddress, "listen-address", c.listenAddress, "the address that the application should listen on")
+	flag.StringVar(&c.logLevel, "log-level", c.logLevel, "the log level to use, e.g. DEBUG, INFO (default), WARN or ERROR")
 	flag.Parse()
 
 	if rawBaseURL != "" {
@@ -72,6 +75,10 @@ func getAppConfiguration() (*AppConfig, error) {
 		} else {
 			c.listenAddress = ":80"
 		}
+	}
+
+	if c.logLevel == "" {
+		c.logLevel = "INFO"
 	}
 
 	return c, nil
